@@ -15,24 +15,28 @@ const (
 	moleSpeed    = time.Second / 10
 	screenWidth  = 720 / 3
 	screenHeight = 1280 / 3
-	blockSize    = 7
+	mazeCols     = 31
+	mazeRows     = 31
+	paddingPx    = 4
 )
 
 var (
-	boardSize    int
-	boardWidth   int
-	boardOffsetX int
-	boardOffsetY int
+	blockSize   int
+	mazeWidth   int
+	mazeHeight  int
+	mazeOffsetX int
+	mazeOffsetY int
 )
 
 func init() {
-	boardSize = screenWidth / blockSize
-	if boardSize%2 == 0 {
-		boardSize--
-	}
-	boardWidth = boardSize * blockSize
-	boardOffsetX = (screenWidth - boardWidth) / 2
-	boardOffsetY = (screenHeight - boardWidth) / 2
+	blockSize = min(
+		(screenWidth-2*paddingPx)/mazeCols,
+		(screenHeight-2*paddingPx)/mazeRows,
+	)
+	mazeWidth = mazeCols * blockSize
+	mazeHeight = mazeRows * blockSize
+	mazeOffsetX = (screenWidth - mazeWidth) / 2
+	mazeOffsetY = (screenHeight - mazeHeight) / 2
 }
 
 type Game struct {
@@ -63,22 +67,22 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// bg
 	vector.FillRect(
 		screen,
-		float32(boardOffsetX),
-		float32(boardOffsetY),
-		float32(boardWidth),
-		float32(boardWidth),
+		float32(mazeOffsetX),
+		float32(mazeOffsetY),
+		float32(mazeWidth),
+		float32(mazeHeight),
 		color.RGBA{70, 60, 94, 255},
 		false,
 	)
 
 	gridColor := color.RGBA{100, 90, 130, 255}
-	for i := range boardSize {
-		pos := float32(boardOffsetX + i*blockSize)
-		// vertical
-		vector.StrokeLine(screen, pos, float32(boardOffsetY), pos, float32(boardOffsetY+boardWidth), 1, gridColor, false)
-		// horizontal
-		hPos := float32(boardOffsetY + i*blockSize)
-		vector.StrokeLine(screen, float32(boardOffsetX), hPos, float32(boardOffsetX+boardWidth), hPos, 1, gridColor, false)
+	for i := range mazeCols {
+		pos := float32(mazeOffsetX + i*blockSize)
+		vector.StrokeLine(screen, pos, float32(mazeOffsetY), pos, float32(mazeOffsetY+mazeHeight), 1, gridColor, false)
+	}
+	for i := range mazeRows {
+		hPos := float32(mazeOffsetY + i*blockSize)
+		vector.StrokeLine(screen, float32(mazeOffsetX), hPos, float32(mazeOffsetX+mazeWidth), hPos, 1, gridColor, false)
 	}
 
 	for y := range g.maze.Height {
@@ -91,10 +95,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			// path
 			vector.FillRect(
 				screen,
-				float32(boardOffsetX+x*blockSize),
-				float32(boardOffsetY+y*blockSize),
-				blockSize,
-				blockSize,
+				float32(mazeOffsetX+x*blockSize),
+				float32(mazeOffsetY+y*blockSize),
+				float32(blockSize),
+				float32(blockSize),
 				color.White,
 				false,
 			)
@@ -103,10 +107,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	vector.FillRect(
 		screen,
-		float32(boardOffsetX+g.maze.Position.X*blockSize),
-		float32(boardOffsetY+g.maze.Position.Y*blockSize),
-		blockSize,
-		blockSize,
+		float32(mazeOffsetX+g.maze.Position.X*blockSize),
+		float32(mazeOffsetY+g.maze.Position.Y*blockSize),
+		float32(blockSize),
+		float32(blockSize),
 		color.RGBA{255, 0, 0, 255},
 		false,
 	)
@@ -122,9 +126,8 @@ func main() {
 	ebiten.SetWindowTitle("Maze Visualizer")
 
 	initialPosition := maze.Point{X: 1, Y: 1}
-	// initialPosition := maze.Point{X: 1, Y: screenWidth / blockSize / 2}
 
-	m := maze.NewMaze(initialPosition, boardSize, boardSize)
+	m := maze.NewMaze(initialPosition, mazeCols, mazeRows)
 
 	g := &Game{
 		maze:   m,

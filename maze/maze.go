@@ -88,7 +88,7 @@ func (m *Maze) Carve() bool {
 func (m *Maze) Backtrack() bool {
 	if len(m.Path) <= 1 {
 		m.Grid[1][0] = true
-		m.Grid[len(m.Grid)-2][len(m.Grid)-1] = true
+		m.Grid[m.Height-2][m.Width-1] = true
 		return false
 	}
 
