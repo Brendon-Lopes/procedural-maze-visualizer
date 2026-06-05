@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	moleSpeed    = time.Second / 30
+	moleSpeed    = time.Second / 10
 	screenWidth  = 720 / 3
 	screenHeight = 1280 / 3
-	blockSize    = 8
+	blockSize    = 10
 )
 
 var (
@@ -38,6 +38,7 @@ func init() {
 type Game struct {
 	lastUpdate time.Time
 	maze       *maze.Maze
+	sounds     *Sounds
 }
 
 func (g *Game) Update() error {
@@ -45,7 +46,11 @@ func (g *Game) Update() error {
 		return nil
 	}
 
-	g.maze.Carve()
+	if g.maze.Carve() {
+		g.sounds.PlayCarve()
+	} else if g.maze.Backtrack() {
+		g.sounds.PlayBacktrack()
+	}
 
 	g.lastUpdate = time.Now()
 
@@ -122,7 +127,8 @@ func main() {
 	m := maze.NewMaze(initialPosition, boardSize, boardSize)
 
 	g := &Game{
-		maze: m,
+		maze:   m,
+		sounds: NewSounds(),
 	}
 
 	if err := ebiten.RunGame(g); err != nil {

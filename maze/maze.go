@@ -44,7 +44,7 @@ func NewMaze(initialPosition Point, width, height int) *Maze {
 	}
 }
 
-func (m *Maze) Carve() {
+func (m *Maze) Carve() bool {
 	y := m.Position.Y
 	x := m.Position.X
 
@@ -55,7 +55,6 @@ func (m *Maze) Carve() {
 		{X: -2, Y: 0}, // left
 	}
 
-	// shuffles with Fisher-Yarnes algorithm
 	m.rng.Shuffle(len(dirs), func(i, j int) {
 		dirs[i], dirs[j] = dirs[j], dirs[i]
 	})
@@ -79,22 +78,23 @@ func (m *Maze) Carve() {
 
 			m.Path = append(m.Path, Point{X: nx, Y: ny})
 
-			return
+			return true
 		}
 	}
 
-	m.Backtrack()
+	return false
 }
 
-func (m *Maze) Backtrack() {
+func (m *Maze) Backtrack() bool {
 	if len(m.Path) <= 1 {
 		m.Grid[1][0] = true
 		m.Grid[len(m.Grid)-2][len(m.Grid)-1] = true
-		return
+		return false
 	}
 
 	m.Path = m.Path[:len(m.Path)-1]
 
 	lastPosition := m.Path[len(m.Path)-1]
 	m.Position = lastPosition
+	return true
 }
