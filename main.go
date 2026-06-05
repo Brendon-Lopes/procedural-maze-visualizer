@@ -5,11 +5,9 @@ import (
 	"image/color"
 	"log"
 	"math/rand"
-	"strconv"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -82,8 +80,12 @@ func (m *Maze) Carve(g *Game) {
 			intermediateY := y + direction.y/2
 			intermediateX := x + direction.x/2
 
+			m.grid[y][x] = true
 			m.grid[ny][nx] = true
 			m.grid[intermediateY][intermediateX] = true
+
+			g.position.x = nx
+			g.position.y = ny
 
 			break
 		}
@@ -113,9 +115,9 @@ type Point struct {
 }
 
 type Game struct {
-	position      Point
-	lastUpdate    time.Time
-	mazeAlgorithm *Maze
+	position   Point
+	lastUpdate time.Time
+	maze       *Maze
 }
 
 func (g *Game) Update() error {
@@ -123,7 +125,7 @@ func (g *Game) Update() error {
 		return nil
 	}
 
-	g.mazeAlgorithm.Carve(g)
+	g.maze.Carve(g)
 
 	g.lastUpdate = time.Now()
 
@@ -154,23 +156,27 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		vector.StrokeLine(screen, float32(boardOffsetX), hPos, float32(boardOffsetX+screenWidth), hPos, 1, gridColor, false)
 	}
 
-	initialX := boardOffsetX + g.position.x*blockSize
-	initialY := boardOffsetY + g.position.y*blockSize
+	// for _, point := range g.maze.carved {
+	for y := range g.maze.height {
+		for x := range g.maze.width {
 
-	// mole
-	vector.FillRect(
-		screen,
-		float32(initialX),
-		float32(initialY),
-		blockSize,
-		blockSize,
-		color.White,
-		false,
-	)
+			if !g.maze.grid[y][x] {
+				continue
+			}
 
-	ebitenutil.DebugPrint(screen, "initial X: "+strconv.Itoa(initialX))
-	ebitenutil.DebugPrintAt(screen, "initial Y: "+strconv.Itoa(initialY), 0, 16)
-	ebitenutil.DebugPrintAt(screen, "board size: "+strconv.Itoa(boardSize), 0, 32)
+			// path
+			vector.FillRect(
+				screen,
+				float32(boardOffsetX+x*blockSize),
+				float32(boardOffsetY+y*blockSize),
+				blockSize,
+				blockSize,
+				color.White,
+				false,
+			)
+		}
+	}
+
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -185,9 +191,8 @@ func main() {
 	maze.Print()
 
 	g := &Game{
-		// initialPosition: Point{1, (boardSize - 1) / 2},
-		position:      Point{1, 1},
-		mazeAlgorithm: maze,
+		position: Point{1, 1},
+		maze:     maze,
 	}
 
 	if err := ebiten.RunGame(g); err != nil {
