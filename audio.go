@@ -191,16 +191,10 @@ func loadWav(path string) []byte {
 		return nil
 	}
 
-	if len(data) < 12 {
-		return nil
-	}
-
 	pos := 12
-
 	for pos+8 <= len(data) {
 		chunkID := string(data[pos : pos+4])
 		chunkSize := int(binary.LittleEndian.Uint32(data[pos+4 : pos+8]))
-
 		if chunkID == "data" {
 			start := pos + 8
 			end := start + chunkSize
@@ -209,12 +203,10 @@ func loadWav(path string) []byte {
 			}
 			return data[start:end]
 		}
-
 		pos += 8 + chunkSize
 		if chunkSize%2 == 1 {
 			pos++
 		}
 	}
-
 	return nil
 }
