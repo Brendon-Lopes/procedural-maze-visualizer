@@ -29,6 +29,22 @@ var (
 	mazeOffsetY int
 )
 
+type Palette struct {
+	Background color.RGBA
+	Board      color.RGBA
+	Grid       color.RGBA
+	Path       color.RGBA
+	Mole       color.RGBA
+}
+
+var colors = Palette{
+	Background: color.RGBA{50, 49, 59, 255},
+	Board:      color.RGBA{70, 60, 94, 255},
+	Grid:       color.RGBA{100, 90, 130, 255},
+	Path:       color.RGBA{255, 255, 255, 255},
+	Mole:       color.RGBA{255, 0, 0, 255},
+}
+
 func init() {
 	blockSize = min(
 		(screenWidth-2*paddingPx)/mazeCols,
@@ -67,27 +83,44 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{50, 49, 59, 255})
+	screen.Fill(colors.Background)
 
-	// bg
+	// board
 	vector.FillRect(
 		screen,
 		float32(mazeOffsetX),
 		float32(mazeOffsetY),
 		float32(mazeWidth),
 		float32(mazeHeight),
-		color.RGBA{70, 60, 94, 255},
+		colors.Board,
 		false,
 	)
 
-	gridColor := color.RGBA{100, 90, 130, 255}
 	for i := range mazeCols {
 		pos := float32(mazeOffsetX + i*blockSize)
-		vector.StrokeLine(screen, pos, float32(mazeOffsetY), pos, float32(mazeOffsetY+mazeHeight), 1, gridColor, false)
+		vector.StrokeLine(
+			screen,
+			pos,
+			float32(mazeOffsetY),
+			pos,
+			float32(mazeOffsetY+mazeHeight),
+			1,
+			colors.Grid,
+			false,
+		)
 	}
 	for i := range mazeRows {
 		hPos := float32(mazeOffsetY + i*blockSize)
-		vector.StrokeLine(screen, float32(mazeOffsetX), hPos, float32(mazeOffsetX+mazeWidth), hPos, 1, gridColor, false)
+		vector.StrokeLine(
+			screen,
+			float32(mazeOffsetX),
+			hPos,
+			float32(mazeOffsetX+mazeWidth),
+			hPos,
+			1,
+			colors.Grid,
+			false,
+		)
 	}
 
 	for y := range g.maze.Height {
@@ -104,7 +137,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				float32(mazeOffsetY+y*blockSize),
 				float32(blockSize),
 				float32(blockSize),
-				color.White,
+				colors.Path,
 				false,
 			)
 		}
@@ -116,7 +149,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		float32(mazeOffsetY+g.maze.Position.Y*blockSize),
 		float32(blockSize),
 		float32(blockSize),
-		color.RGBA{255, 0, 0, 255},
+		colors.Mole,
 		false,
 	)
 
