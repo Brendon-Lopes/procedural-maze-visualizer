@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image/color"
 	"log"
 	"math/rand"
@@ -12,10 +11,10 @@ import (
 )
 
 const (
-	moleSpeed    = time.Second / 6
-	screenWidth  = 300
+	moleSpeed    = time.Second / 12
+	screenWidth  = 270
 	screenHeight = 480
-	blockSize    = 20
+	blockSize    = 10
 	boardSize    = screenWidth / blockSize
 	boardOffsetX = 0
 	boardOffsetY = (screenHeight - screenWidth) / 2
@@ -25,12 +24,15 @@ type Point struct {
 	x, y int
 }
 
+// TODO:
+// move Maze to own package
 type Maze struct {
-	width  int
-	height int
-	grid   [][]bool
-	rng    *rand.Rand
-	path   []Point
+	width    int
+	height   int
+	grid     [][]bool
+	rng      *rand.Rand
+	position Point
+	path     []Point
 }
 
 func NewMaze(initialPosition Point) *Maze {
@@ -52,17 +54,18 @@ func NewMaze(initialPosition Point) *Maze {
 	rng := rand.New(s)
 
 	return &Maze{
-		width:  width,
-		height: width,
-		grid:   grid,
-		rng:    rng,
-		path:   []Point{initialPosition},
+		width:    width,
+		height:   width,
+		grid:     grid,
+		rng:      rng,
+		position: initialPosition,
+		path:     []Point{initialPosition},
 	}
 }
 
 func (m *Maze) Carve(g *Game) bool {
-	y := g.position.y
-	x := g.position.x
+	y := g.maze.position.y
+	x := g.maze.position.x
 
 	dirs := []Point{
 		{0, -2}, // up
@@ -90,8 +93,8 @@ func (m *Maze) Carve(g *Game) bool {
 			m.grid[ny][nx] = true
 			m.grid[intermediateY][intermediateX] = true
 
-			g.position.x = nx
-			g.position.y = ny
+			g.maze.position.x = nx
+			g.maze.position.y = ny
 
 			g.maze.path = append(g.maze.path, Point{nx, ny})
 
@@ -103,7 +106,6 @@ func (m *Maze) Carve(g *Game) bool {
 }
 
 type Game struct {
-	position   Point
 	lastUpdate time.Time
 	maze       *Maze
 }
@@ -119,6 +121,9 @@ func (g *Game) Update() error {
 		return nil
 	}
 
+	// TODO:
+	// carve doors at the end
+
 	if !couldCarve {
 		g.maze.path = g.maze.path[:len(g.maze.path)-1]
 
@@ -127,8 +132,7 @@ func (g *Game) Update() error {
 		}
 
 		lastPosition := g.maze.path[len(g.maze.path)-1]
-		fmt.Println("last", lastPosition.x, lastPosition.y)
-		g.position = lastPosition
+		g.maze.position = lastPosition
 	}
 
 	g.lastUpdate = time.Now()
@@ -160,7 +164,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		vector.StrokeLine(screen, float32(boardOffsetX), hPos, float32(boardOffsetX+screenWidth), hPos, 1, gridColor, false)
 	}
 
-	// for _, point := range g.maze.carved {
 	for y := range g.maze.height {
 		for x := range g.maze.width {
 
@@ -183,8 +186,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	vector.FillRect(
 		screen,
-		float32(boardOffsetX+g.position.x*blockSize),
-		float32(boardOffsetY+g.position.y*blockSize),
+		float32(boardOffsetX+g.maze.position.x*blockSize),
+		float32(boardOffsetY+g.maze.position.y*blockSize),
 		blockSize,
 		blockSize,
 		color.RGBA{255, 0, 0, 255},
@@ -206,8 +209,7 @@ func main() {
 	maze := NewMaze(initialPosition)
 
 	g := &Game{
-		position: initialPosition,
-		maze:     maze,
+		maze: maze,
 	}
 
 	if err := ebiten.RunGame(g); err != nil {
