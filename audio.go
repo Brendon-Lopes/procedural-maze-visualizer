@@ -47,7 +47,7 @@ func (s *Sounds) PlayCarve() {
 	}
 	// Subtle pitch variation
 	ratio := 1.0 + rand.Float64()*2*pitchVariation - pitchVariation
-	buf := applyFade(pitchShift(s.carveBuf, ratio))
+	buf := applyReverb(applyFade(pitchShift(s.carveBuf, ratio)))
 	p := audioCtx.NewPlayerFromBytes(buf)
 	p.Play()
 }
@@ -58,7 +58,7 @@ func (s *Sounds) PlayBacktrack() {
 	}
 	// Subtle pitch variation around the base pitch shift
 	ratio := pitchShiftRatio + rand.Float64()*2*pitchVariation - pitchVariation
-	buf := applyFade(pitchShift(s.carveBuf, ratio))
+	buf := applyReverb(applyFade(pitchShift(s.carveBuf, ratio)))
 	p := audioCtx.NewPlayerFromBytes(buf)
 	p.Play()
 }
@@ -140,6 +140,43 @@ func applyFade(pcm []byte) []byte {
 			faded := int16(float32(sample) * gain)
 			result[byteOffset] = byte(faded)
 			result[byteOffset+1] = byte(faded >> 8)
+		}
+	}
+
+	return result
+}
+
+// applyReverb adds a subtle reverb effect by mixing a delayed copy
+// of the sound with reduced amplitude.
+func applyReverb(pcm []byte) []byte {
+	frameBytes := 4
+	numFrames := len(pcm) / frameBytes
+
+	// 35ms delay with 15% feedback
+	delayFrames := sampleRate * 35 / 1000
+	feedback := float32(0.15)
+
+	result := make([]byte, len(pcm))
+	copy(result, pcm)
+
+	for i := delayFrames; i < numFrames; i++ {
+		for ch := 0; ch < 2; ch++ {
+			srcOffset := (i-delayFrames)*frameBytes + ch*2
+			dstOffset := i*frameBytes + ch*2
+
+			src := int16(pcm[srcOffset]) | int16(pcm[srcOffset+1])<<8
+			dst := int16(result[dstOffset]) | int16(result[dstOffset+1])<<8
+
+			mixed := dst + int16(float32(src)*feedback)
+			// Clamp to prevent overflow
+			if mixed > 32767 {
+				mixed = 32767
+			} else if mixed < -32768 {
+				mixed = -32768
+			}
+
+			result[dstOffset] = byte(mixed)
+			result[dstOffset+1] = byte(mixed >> 8)
 		}
 	}
 

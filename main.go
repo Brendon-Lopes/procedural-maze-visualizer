@@ -15,7 +15,7 @@ const (
 	moleSpeed    = time.Second / 10
 	screenWidth  = 720 / 3
 	screenHeight = 1280 / 3
-	blockSize    = 10
+	blockSize    = 7
 )
 
 var (
