@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	moleSpeed    = time.Second / 2
+	moleSpeed    = time.Second / 6
 	screenWidth  = 300
 	screenHeight = 480
 	blockSize    = 20
@@ -21,14 +21,19 @@ const (
 	boardOffsetY = (screenHeight - screenWidth) / 2
 )
 
+type Point struct {
+	x, y int
+}
+
 type Maze struct {
 	width  int
 	height int
 	grid   [][]bool
 	rng    *rand.Rand
+	path   []Point
 }
 
-func NewMaze() *Maze {
+func NewMaze(initialPosition Point) *Maze {
 	width := screenWidth / blockSize
 
 	grid := make([][]bool, width)
@@ -51,10 +56,11 @@ func NewMaze() *Maze {
 		height: width,
 		grid:   grid,
 		rng:    rng,
+		path:   []Point{initialPosition},
 	}
 }
 
-func (m *Maze) Carve(g *Game) {
+func (m *Maze) Carve(g *Game) bool {
 	y := g.position.y
 	x := g.position.x
 
@@ -87,31 +93,13 @@ func (m *Maze) Carve(g *Game) {
 			g.position.x = nx
 			g.position.y = ny
 
-			break
+			g.maze.path = append(g.maze.path, Point{nx, ny})
+
+			return true
 		}
-
-		// TODO:
-		// if it gets here, no valid block was found (dead end)
-		// needs to backtrack
 	}
-}
 
-func (m *Maze) Print() {
-	for _, row := range m.grid {
-		for _, cell := range row {
-			if cell {
-				fmt.Print("    ")
-			} else {
-				fmt.Print("██  ")
-			}
-		}
-		fmt.Println()
-		fmt.Println()
-	}
-}
-
-type Point struct {
-	x, y int
+	return false
 }
 
 type Game struct {
@@ -125,7 +113,23 @@ func (g *Game) Update() error {
 		return nil
 	}
 
-	g.maze.Carve(g)
+	couldCarve := g.maze.Carve(g)
+
+	if !couldCarve && len(g.maze.path) == 0 {
+		return nil
+	}
+
+	if !couldCarve {
+		g.maze.path = g.maze.path[:len(g.maze.path)-1]
+
+		if len(g.maze.path) == 0 {
+			return nil
+		}
+
+		lastPosition := g.maze.path[len(g.maze.path)-1]
+		fmt.Println("last", lastPosition.x, lastPosition.y)
+		g.position = lastPosition
+	}
 
 	g.lastUpdate = time.Now()
 
@@ -177,6 +181,16 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
+	vector.FillRect(
+		screen,
+		float32(boardOffsetX+g.position.x*blockSize),
+		float32(boardOffsetY+g.position.y*blockSize),
+		blockSize,
+		blockSize,
+		color.RGBA{255, 0, 0, 255},
+		false,
+	)
+
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -187,11 +201,12 @@ func main() {
 	ebiten.SetWindowSize(screenWidth*2, screenHeight*2)
 	ebiten.SetWindowTitle("Maze Visualizer")
 
-	maze := NewMaze()
-	maze.Print()
+	initialPosition := Point{1, 1}
+
+	maze := NewMaze(initialPosition)
 
 	g := &Game{
-		position: Point{1, 1},
+		position: initialPosition,
 		maze:     maze,
 	}
 
