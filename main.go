@@ -40,9 +40,9 @@ type Palette struct {
 var colors = Palette{
 	Background: color.RGBA{50, 49, 59, 255},
 	Board:      color.RGBA{70, 60, 94, 255},
-	Grid:       color.RGBA{100, 90, 130, 255},
+	Grid:       color.RGBA{93, 71, 118, 255},
 	Path:       color.RGBA{255, 255, 255, 255},
-	Mole:       color.RGBA{255, 0, 0, 255},
+	Mole:       color.RGBA{255, 93, 204, 255},
 }
 
 func init() {
@@ -53,7 +53,7 @@ func init() {
 	mazeWidth = mazeCols * blockSize
 	mazeHeight = mazeRows * blockSize
 	mazeOffsetX = (screenWidth - mazeWidth) / 2
-	mazeOffsetY = (screenHeight - mazeHeight) / 2
+	mazeOffsetY = ((screenHeight - mazeHeight) / 2) - 30
 }
 
 type Game struct {
