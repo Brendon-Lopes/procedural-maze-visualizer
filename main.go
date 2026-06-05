@@ -13,7 +13,7 @@ import (
 const (
 	screenWidth  = 300
 	screenHeight = 480
-	blockSize    = 100
+	blockSize    = 20
 	boardSize    = screenWidth / blockSize
 	boardOffsetX = 0
 	boardOffsetY = (screenHeight - screenWidth) / 2
@@ -32,7 +32,7 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{50, 49, 59, 1})
+	screen.Fill(color.RGBA{50, 49, 59, 255})
 
 	// bg
 	vector.FillRect(
@@ -41,9 +41,20 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		float32(boardOffsetY),
 		screenWidth,
 		screenWidth,
-		color.RGBA{70, 60, 94, 1},
+		color.RGBA{70, 60, 94, 255},
 		false,
 	)
+
+	// debug grid
+	gridColor := color.RGBA{100, 90, 130, 255}
+	for i := 0; i <= boardSize; i++ {
+		pos := float32(boardOffsetX + i*blockSize)
+		// vertical
+		vector.StrokeLine(screen, pos, float32(boardOffsetY), pos, float32(boardOffsetY+screenWidth), 1, gridColor, false)
+		// horizontal
+		hPos := float32(boardOffsetY + i*blockSize)
+		vector.StrokeLine(screen, float32(boardOffsetX), hPos, float32(boardOffsetX+screenWidth), hPos, 1, gridColor, false)
+	}
 
 	initialX := boardOffsetX + g.initialPosition.x*blockSize
 	initialY := boardOffsetY + g.initialPosition.y*blockSize
