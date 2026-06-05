@@ -18,6 +18,7 @@ const (
 	mazeCols     = 31
 	mazeRows     = 31
 	paddingPx    = 4
+	startDelay   = 3 * time.Second
 )
 
 var (
@@ -40,13 +41,17 @@ func init() {
 }
 
 type Game struct {
-	lastUpdate time.Time
-	maze       *maze.Maze
-	sounds     *Sounds
+	startTime time.Time
+	maze      *maze.Maze
+	sounds    *Sounds
 }
 
 func (g *Game) Update() error {
-	if time.Since(g.lastUpdate) < moleSpeed {
+	if time.Since(g.startTime) < startDelay {
+		return nil
+	}
+
+	if time.Since(g.startTime)-startDelay < moleSpeed {
 		return nil
 	}
 
@@ -56,7 +61,7 @@ func (g *Game) Update() error {
 		g.sounds.PlayBacktrack()
 	}
 
-	g.lastUpdate = time.Now()
+	g.startTime = time.Now().Add(-startDelay)
 
 	return nil
 }
@@ -130,8 +135,9 @@ func main() {
 	m := maze.NewMaze(initialPosition, mazeCols, mazeRows)
 
 	g := &Game{
-		maze:   m,
-		sounds: NewSounds(),
+		startTime: time.Now(),
+		maze:      m,
+		sounds:    NewSounds(),
 	}
 
 	if err := ebiten.RunGame(g); err != nil {
