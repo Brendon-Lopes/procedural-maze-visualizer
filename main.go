@@ -3,11 +3,12 @@ package main
 import (
 	"image/color"
 	"log"
-	"math/rand"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"procedural-maze-visualizer/maze"
 )
 
 const (
@@ -20,94 +21,11 @@ const (
 	boardOffsetY = (screenHeight - screenWidth) / 2
 )
 
-type Point struct {
-	x, y int
-}
-
-// TODO:
-// move Maze to own package
-type Maze struct {
-	width    int
-	height   int
-	grid     [][]bool
-	rng      *rand.Rand
-	position Point
-	path     []Point
-}
-
-func NewMaze(initialPosition Point) *Maze {
-	width := screenWidth / blockSize
-
-	grid := make([][]bool, width)
-
-	for i := range grid {
-		grid[i] = make([]bool, width)
-
-		for j := range width {
-			grid[i][j] = false
-		}
-	}
-
-	// creates a seed (source) with the source being the current time in nanoseconds
-	s := rand.NewSource(time.Now().UnixNano())
-	// creates instance of rand with the designated seed
-	rng := rand.New(s)
-
-	return &Maze{
-		width:    width,
-		height:   width,
-		grid:     grid,
-		rng:      rng,
-		position: initialPosition,
-		path:     []Point{initialPosition},
-	}
-}
-
-func (m *Maze) Carve(g *Game) bool {
-	y := g.maze.position.y
-	x := g.maze.position.x
-
-	dirs := []Point{
-		{0, -2}, // up
-		{0, 2},  // down
-		{2, 0},  // right
-		{-2, 0}, // left
-	}
-
-	// shuffles with Fisher-Yarnes algorithm
-	m.rng.Shuffle(len(dirs), func(i, j int) {
-		dirs[i], dirs[j] = dirs[j], dirs[i]
-	})
-
-	for _, direction := range dirs {
-		nx, ny := x+direction.x, y+direction.y
-
-		canGoToX := nx > 0 && nx < m.width-1
-		canGoToY := ny > 0 && ny < m.height-1
-
-		if canGoToX && canGoToY && !m.grid[ny][nx] {
-			intermediateY := y + direction.y/2
-			intermediateX := x + direction.x/2
-
-			m.grid[y][x] = true
-			m.grid[ny][nx] = true
-			m.grid[intermediateY][intermediateX] = true
-
-			g.maze.position.x = nx
-			g.maze.position.y = ny
-
-			g.maze.path = append(g.maze.path, Point{nx, ny})
-
-			return true
-		}
-	}
-
-	return false
-}
+type Point = maze.Point
 
 type Game struct {
 	lastUpdate time.Time
-	maze       *Maze
+	maze       *maze.Maze
 }
 
 func (g *Game) Update() error {
@@ -115,25 +33,7 @@ func (g *Game) Update() error {
 		return nil
 	}
 
-	couldCarve := g.maze.Carve(g)
-
-	if !couldCarve && len(g.maze.path) == 0 {
-		return nil
-	}
-
-	// TODO:
-	// carve doors at the end
-
-	if !couldCarve {
-		g.maze.path = g.maze.path[:len(g.maze.path)-1]
-
-		if len(g.maze.path) == 0 {
-			return nil
-		}
-
-		lastPosition := g.maze.path[len(g.maze.path)-1]
-		g.maze.position = lastPosition
-	}
+	g.maze.Carve()
 
 	g.lastUpdate = time.Now()
 
@@ -164,10 +64,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		vector.StrokeLine(screen, float32(boardOffsetX), hPos, float32(boardOffsetX+screenWidth), hPos, 1, gridColor, false)
 	}
 
-	for y := range g.maze.height {
-		for x := range g.maze.width {
+	for y := range g.maze.Height {
+		for x := range g.maze.Width {
 
-			if !g.maze.grid[y][x] {
+			if !g.maze.Grid[y][x] {
 				continue
 			}
 
@@ -186,8 +86,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	vector.FillRect(
 		screen,
-		float32(boardOffsetX+g.maze.position.x*blockSize),
-		float32(boardOffsetY+g.maze.position.y*blockSize),
+		float32(boardOffsetX+g.maze.Position.X*blockSize),
+		float32(boardOffsetY+g.maze.Position.Y*blockSize),
 		blockSize,
 		blockSize,
 		color.RGBA{255, 0, 0, 255},
@@ -204,12 +104,12 @@ func main() {
 	ebiten.SetWindowSize(screenWidth*2, screenHeight*2)
 	ebiten.SetWindowTitle("Maze Visualizer")
 
-	initialPosition := Point{1, 1}
+	initialPosition := Point{X: 1, Y: 1}
 
-	maze := NewMaze(initialPosition)
+	m := maze.NewMaze(initialPosition, screenWidth, blockSize)
 
 	g := &Game{
-		maze: maze,
+		maze: m,
 	}
 
 	if err := ebiten.RunGame(g); err != nil {
