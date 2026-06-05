@@ -3,27 +3,65 @@ package main
 import (
 	"image/color"
 	"log"
+	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	// "github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 const (
-	screenWidth  = 270
+	screenWidth  = 300
 	screenHeight = 480
+	blockSize    = 100
+	boardSize    = screenWidth / blockSize
+	boardOffsetX = 0
+	boardOffsetY = (screenHeight - screenWidth) / 2
 )
 
-type Game struct{}
+type Point struct {
+	x, y int
+}
+
+type Game struct {
+	initialPosition Point
+}
 
 func (g *Game) Update() error {
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Fill(color.Black)
+	screen.Fill(color.RGBA{50, 49, 59, 1})
 
-	ebitenutil.DebugPrint(screen, "Hello, World!")
+	// bg
+	vector.FillRect(
+		screen,
+		float32(boardOffsetX),
+		float32(boardOffsetY),
+		screenWidth,
+		screenWidth,
+		color.RGBA{70, 60, 94, 1},
+		false,
+	)
+
+	initialX := boardOffsetX + g.initialPosition.x*blockSize
+	initialY := boardOffsetY + g.initialPosition.y*blockSize
+
+	// mole
+	vector.FillRect(
+		screen,
+		float32(initialX),
+		float32(initialY),
+		blockSize,
+		blockSize,
+		color.White,
+		false,
+	)
+
+	ebitenutil.DebugPrint(screen, "initial X: "+strconv.Itoa(initialX))
+	ebitenutil.DebugPrintAt(screen, "initial Y: "+strconv.Itoa(initialY), 0, 16)
+	ebitenutil.DebugPrintAt(screen, "board size: "+strconv.Itoa(boardSize), 0, 32)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -32,8 +70,13 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func main() {
 	ebiten.SetWindowSize(screenWidth*2, screenHeight*2)
-	ebiten.SetWindowTitle("Hello, World!")
-	if err := ebiten.RunGame(&Game{}); err != nil {
+	ebiten.SetWindowTitle("Maze Visualizer")
+
+	g := &Game{
+		initialPosition: Point{1, (boardSize - 1) / 2},
+	}
+
+	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}
 }
