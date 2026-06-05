@@ -15,11 +15,25 @@ const (
 	moleSpeed    = time.Second / 30
 	screenWidth  = 720 / 3
 	screenHeight = 1280 / 3
-	blockSize    = 7
-	boardSize    = screenWidth / blockSize
-	boardOffsetX = 0
-	boardOffsetY = (screenHeight - screenWidth) / 2
+	blockSize    = 8
 )
+
+var (
+	boardSize    int
+	boardWidth   int
+	boardOffsetX int
+	boardOffsetY int
+)
+
+func init() {
+	boardSize = screenWidth / blockSize
+	if boardSize%2 == 0 {
+		boardSize--
+	}
+	boardWidth = boardSize * blockSize
+	boardOffsetX = (screenWidth - boardWidth) / 2
+	boardOffsetY = (screenHeight - boardWidth) / 2
+}
 
 type Game struct {
 	lastUpdate time.Time
@@ -46,8 +60,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		screen,
 		float32(boardOffsetX),
 		float32(boardOffsetY),
-		screenWidth,
-		screenWidth,
+		float32(boardWidth),
+		float32(boardWidth),
 		color.RGBA{70, 60, 94, 255},
 		false,
 	)
@@ -56,10 +70,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	for i := range boardSize {
 		pos := float32(boardOffsetX + i*blockSize)
 		// vertical
-		vector.StrokeLine(screen, pos, float32(boardOffsetY), pos, float32(boardOffsetY+screenWidth), 1, gridColor, false)
+		vector.StrokeLine(screen, pos, float32(boardOffsetY), pos, float32(boardOffsetY+boardWidth), 1, gridColor, false)
 		// horizontal
 		hPos := float32(boardOffsetY + i*blockSize)
-		vector.StrokeLine(screen, float32(boardOffsetX), hPos, float32(boardOffsetX+screenWidth), hPos, 1, gridColor, false)
+		vector.StrokeLine(screen, float32(boardOffsetX), hPos, float32(boardOffsetX+boardWidth), hPos, 1, gridColor, false)
 	}
 
 	for y := range g.maze.Height {
@@ -105,7 +119,7 @@ func main() {
 	initialPosition := maze.Point{X: 1, Y: 1}
 	// initialPosition := maze.Point{X: 1, Y: screenWidth / blockSize / 2}
 
-	m := maze.NewMaze(initialPosition, screenWidth, blockSize)
+	m := maze.NewMaze(initialPosition, boardSize, boardSize)
 
 	g := &Game{
 		maze: m,

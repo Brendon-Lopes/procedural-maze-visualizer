@@ -18,10 +18,8 @@ type Maze struct {
 	rng      *rand.Rand
 }
 
-func NewMaze(initialPosition Point, screenWidth, blockSize int) *Maze {
-	width := screenWidth / blockSize
-
-	grid := make([][]bool, width)
+func NewMaze(initialPosition Point, width, height int) *Maze {
+	grid := make([][]bool, height)
 
 	for i := range grid {
 		grid[i] = make([]bool, width)
@@ -38,7 +36,7 @@ func NewMaze(initialPosition Point, screenWidth, blockSize int) *Maze {
 
 	return &Maze{
 		Width:    width,
-		Height:   width,
+		Height:   height,
 		Grid:     grid,
 		rng:      rng,
 		Position: initialPosition,
