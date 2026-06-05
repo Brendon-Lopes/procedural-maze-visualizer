@@ -13,9 +13,9 @@ type Maze struct {
 	Width    int
 	Height   int
 	Grid     [][]bool
-	rng      *rand.Rand
 	Position Point
 	Path     []Point
+	rng      *rand.Rand
 }
 
 func NewMaze(initialPosition Point, screenWidth, blockSize int) *Maze {
@@ -46,7 +46,7 @@ func NewMaze(initialPosition Point, screenWidth, blockSize int) *Maze {
 	}
 }
 
-func (m *Maze) Carve() bool {
+func (m *Maze) Carve() {
 	y := m.Position.Y
 	x := m.Position.X
 
@@ -81,25 +81,21 @@ func (m *Maze) Carve() bool {
 
 			m.Path = append(m.Path, Point{X: nx, Y: ny})
 
-			return true
+			return
 		}
 	}
 
 	m.Backtrack()
-
-	return false
 }
 
 func (m *Maze) Backtrack() {
-	if len(m.Path) == 0 {
+	if len(m.Path) <= 1 {
+		m.Grid[1][0] = true
+		m.Grid[len(m.Grid)-2][len(m.Grid)-1] = true
 		return
 	}
 
 	m.Path = m.Path[:len(m.Path)-1]
-
-	if len(m.Path) == 0 {
-		return
-	}
 
 	lastPosition := m.Path[len(m.Path)-1]
 	m.Position = lastPosition
